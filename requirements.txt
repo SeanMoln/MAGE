@@ -1,0 +1,27 @@
+# MARS-PMB 專案相依套件
+# 安裝方式: pip install -r requirements.txt
+
+# OpenAI API
+openai>=1.12.0
+
+# 環境變數管理
+python-dotenv>=1.0.0
+
+# 機器學習與資料處理
+scikit-learn>=1.3.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# 視覺化
+matplotlib>=3.7.0
+
+# 進度條
+tqdm>=4.65.0
+
+# Excel 檔案處理（用於 PromptMemoryAgent 的 Excel 輸出）
+openpyxl>=3.1.0
+
+# PDF 處理（用於 pdf_to_text.py）
+PyPDF2>=3.0.0
+# 或使用 pdfplumber（更強大的 PDF 解析）
+# pdfplumber>=0.9.0

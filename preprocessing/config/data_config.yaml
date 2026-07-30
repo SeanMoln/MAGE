@@ -1,0 +1,217 @@
+# MIMIC Clinical Notes Preprocessing Configuration
+
+# Data source information
+data_source:
+  database: "MIMIC-III"  # or "MIMIC-IV"
+  version: "1.4"  # 請填入實際版本
+  access_date: "2025-11-18"  # 資料取得日期
+
+  # IRB and authorization
+  irb_approval: false  # 是否已取得 IRB 核准
+  physionet_certified: false  # 是否完成 PhysioNet CITI 訓練
+  notes:
+    - "請確認已完成 CITI Human Subjects Research 訓練"
+    - "請確認已簽署 PhysioNet Data Use Agreement"
+    - "MIMIC 資料僅供授權研究使用，不可重新分發"
+
+# Data selection criteria (納入條件)
+selection_criteria:
+  # Note types to include
+  note_categories:
+    - "Discharge summary"
+    - "Physician"
+    - "Nursing"
+    - "Nursing/other"
+    - "Consult"
+    - "Progress notes"
+
+  # Patient population
+  patient_criteria:
+    min_age: 18  # 成年患者
+    max_age: null  # null = 無上限
+    icu_only: false  # 是否只選 ICU 患者
+
+  # Time range
+  date_range:
+    start_date: null  # null = 無限制, 格式 "YYYY-MM-DD"
+    end_date: null
+
+  # Note quality filters
+  note_filters:
+    min_length: 100  # 最少字元數
+    max_length: 50000  # 最多字元數
+    exclude_addendum: true  # 排除 addendum notes
+
+# Sampling strategy
+sampling:
+  method: "random"  # "random", "stratified", or "all"
+  target_n: 2000  # 目標樣本數
+
+  # Stratified sampling (if method = "stratified")
+  stratify_by:
+    - "note_category"
+    # - "diagnosis_group"
+    # - "service_department"
+
+  random_seed: 42  # 可重現性
+
+# SQL query templates
+sql_templates:
+  # MIMIC-III query
+  mimic3_query: |
+    SELECT
+      n.row_id as note_id,
+      n.subject_id,
+      n.hadm_id,
+      n.charttime,
+      n.chartdate,
+      n.category,
+      n.description,
+      n.text,
+      p.gender,
+      EXTRACT(YEAR FROM n.charttime) - EXTRACT(YEAR FROM p.dob) as age
+    FROM noteevents n
+    INNER JOIN patients p ON n.subject_id = p.subject_id
+    WHERE n.iserror IS NULL
+      AND n.text IS NOT NULL
+      AND LENGTH(n.text) >= {min_length}
+      AND LENGTH(n.text) <= {max_length}
+      AND n.category IN ({categories})
+      {age_filter}
+      {date_filter}
+      {note_filter}
+    ORDER BY RANDOM()
+    LIMIT {limit};
+
+  # MIMIC-IV query
+  mimic4_query: |
+    SELECT
+      n.note_id,
+      n.subject_id,
+      n.hadm_id,
+      n.charttime,
+      n.storetime,
+      n.note_type,
+      n.note_seq,
+      n.text,
+      p.gender,
+      p.anchor_age as age
+    FROM mimic_note.discharge n
+    INNER JOIN mimic_hosp.patients p ON n.subject_id = p.subject_id
+    WHERE n.text IS NOT NULL
+      AND LENGTH(n.text) >= {min_length}
+      AND LENGTH(n.text) <= {max_length}
+      {date_filter}
+    ORDER BY RANDOM()
+    LIMIT {limit};
+
+# Text cleaning configuration
+cleaning:
+  # Character encoding
+  target_encoding: "utf-8"
+
+  # Line breaks
+  normalize_linebreaks: true
+  max_consecutive_linebreaks: 2
+
+  # Whitespace
+  normalize_whitespace: true
+  trim_lines: true
+
+  # Deidentification markers
+  deidentification:
+    action: "replace"  # "replace" or "remove"
+    marker_pattern: "\\[\\*\\*[^\\]]*\\*\\*\\]"
+
+  # Remove patterns
+  remove_patterns:
+    - "^Page \\d+ of \\d+$"  # Page numbers
+    - "^Printed on.*$"  # Print timestamps
+    - "^_{10,}$"  # Long underlines
+    - "^={10,}$"  # Long equal signs
+    - "^\\*{10,}$"  # Long asterisks
+    - "^-{10,}$"  # Long dashes
+
+# SOAP parsing configuration
+soap_parsing:
+  # Parser mode
+  mode: "hybrid"  # "rule_based", "heuristic", or "hybrid"
+
+  # Rule-based parser settings
+  rule_based:
+    case_sensitive: false
+    require_colon: false  # "S:" vs "S" 都接受
+    section_order_strict: false  # 是否要求 S -> O -> A -> P 順序
+
+  # Heuristic parser settings (當找不到明顯標題時)
+  heuristic:
+    enabled: true
+    confidence_threshold: 0.6  # 0-1, 信心度門檻
+    min_section_words: 10  # 每個區段最少字數
+
+  # Output settings
+  output:
+    include_empty: false  # 是否包含空區段
+    section_format: "{section}: {content}"
+    section_separator: " "
+
+# Quality control
+quality_control:
+  # Enable/disable QC steps
+  enable_qc: true
+
+  # Automatic filtering
+  auto_remove:
+    empty_notes: true
+    too_short: true  # < min_words
+    too_long: true   # > max_words
+    no_soap_sections: true  # 完全沒有 SOAP 區段
+
+  # Thresholds
+  thresholds:
+    min_words: 50
+    max_words: 10000
+    min_soap_sections: 2  # 至少要有 2 個 SOAP 區段
+
+  # Manual review sampling
+  manual_review:
+    enabled: true
+    sample_size: 30  # 抽查幾筆
+    random_seed: 42
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/preprocessing.log"
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # 記錄統計資訊
+  save_statistics: true
+  statistics_file: "logs/preprocessing_stats.json"
+
+# Output paths
+output:
+  # Main output
+  soap_json: "data_soap/soap_notes.json"
+  mapping_csv: "data_soap/soap_mapping.csv"
+
+  # Intermediate outputs (for debugging)
+  save_intermediate: true
+  cleaned_notes_csv: "data_clean/notes_cleaned.csv"
+  raw_notes_csv: "data_raw/notes_raw.csv"
+
+  # Statistics and reports
+  qc_report: "logs/qc_report.txt"
+  statistics_report: "logs/statistics.json"
+
+# Processing options
+processing:
+  # Parallel processing
+  use_multiprocessing: false  # 是否使用多進程
+  n_workers: 4  # 工作進程數 (if multiprocessing enabled)
+
+  # Memory optimization
+  chunk_size: 1000  # 批次處理大小
+
+  # Progress tracking
+  show_progress: true  # 顯示進度條

@@ -1,0 +1,85 @@
+# 不要 commit 的秘密檔
+.env
+.evv
+
+# 舊檔案暫存區
+_old/
+_misc/
+archive/
+
+# Python 編譯與快取
+__pycache__/
+*.pyc
+
+# 虛擬環境
+.venv/
+
+# 開發臨時檔案
+*.tmp
+*.log
+logs/
+
+# 文件目錄
+docs/
+
+# LaTeX 編譯產物
+*.aux
+*.bcf
+*.out
+*.synctex.gz
+*.blg
+*.bbl
+*.fls
+*.fdb_latexmk
+*.run.xml
+*.bak
+docs/進度/*.pdf
+docs/進度/*.zip
+docs/進度/*.tar.gz
+docs/進度/thesis_latex/
+
+# 人工評估介面
+human_eval_app.py
+
+# Claude 本地設定
+.claude/
+.agents/
+
+# prompt memory（根目錄與 data/ 內皆忽略）
+prompt_memory.json
+
+# 所有資料檔案
+*.csv
+*.csv.gz
+*.json
+*.xlsx
+*.xls
+
+# 文件檔案（只保留 README.md）
+*.pdf
+*.docx
+*.doc
+*.md
+!README.md
+
+# 資料目錄
+data/
+preprocessing/data_raw/
+preprocessing/data_clean/
+preprocessing/data_soap/
+preprocessing/logs/
+physionet.org/
+mimiciii-demo/
+
+# 評估結果
+evaluation/results/
+evaluation/*.csv
+evaluation/*.png
+
+# 輸出檔案
+*_output.log
+test_output.log
+
+# 例外：保留配置檔案
+!preprocessing/config/*.yaml
+!preprocessing/config/*.json

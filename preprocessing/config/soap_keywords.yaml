@@ -1,0 +1,228 @@
+# SOAP Section Keywords Configuration
+# 用於辨識臨床筆記中的 SOAP 區段標題
+
+# Subjective (主訴) - 病人主觀症狀與病史
+subjective:
+  primary:
+    - "subjective"
+    - "s:"
+    - "chief complaint"
+    - "cc:"
+    - "history of present illness"
+    - "hpi"
+    - "hpi:"
+
+  secondary:
+    - "patient reports"
+    - "patient states"
+    - "patient complains"
+    - "presenting symptoms"
+    - "history:"
+    - "presenting complaint"
+
+# Objective (客觀檢查) - 生命徵象、檢驗、影像
+objective:
+  primary:
+    - "objective"
+    - "o:"
+    - "physical exam"
+    - "physical examination"
+    - "pe"
+    - "pe:"
+    - "vital signs"
+    - "vitals"
+
+  secondary:
+    - "labs"
+    - "laboratory"
+    - "imaging"
+    - "examination"
+    - "findings"
+    - "general appearance"
+    - "heent"
+    - "cardiovascular"
+    - "respiratory"
+    - "abdomen"
+    - "extremities"
+    - "neurological"
+
+# Assessment (評估) - 診斷與分析
+assessment:
+  primary:
+    - "assessment"
+    - "a:"
+    - "impression"
+    - "diagnosis"
+    - "dx:"
+
+  secondary:
+    - "assessment and plan"  # 有時 A/P 合併
+    - "impression:"
+    - "diagnoses:"
+    - "problem list"
+    - "problems:"
+
+# Plan (計畫) - 治療方案與後續追蹤
+plan:
+  primary:
+    - "plan"
+    - "p:"
+    - "treatment plan"
+    - "recommendations"
+
+  secondary:
+    - "continue"
+    - "start"
+    - "discharge"
+    - "follow-up"
+    - "follow up"
+    - "will"
+    - "management"
+    - "therapy"
+
+# Special handling
+special_patterns:
+  # 合併的 A/P 區段
+  assessment_plan:
+    - "assessment and plan"
+    - "a/p"
+    - "a/p:"
+    - "assessment/plan"
+
+  # 常見的替代標題
+  alternatives:
+    subjective:
+      - "history"
+      - "complaint"
+      - "symptoms"
+
+    objective:
+      - "exam"
+      - "examination"
+      - "vitals"
+
+    assessment:
+      - "dx"
+      - "diagnosis"
+      - "impression"
+
+    plan:
+      - "rx"
+      - "treatment"
+      - "recommendations"
+
+# Heuristic indicators (當找不到明顯標題時使用)
+heuristic_indicators:
+  subjective:
+    - "complained of"
+    - "presented with"
+    - "reported"
+    - "history of"
+    - "symptoms include"
+    - "pain"
+    - "shortness of breath"
+    - "nausea"
+    - "vomiting"
+    - "fever"
+
+  objective:
+    - "bp"
+    - "hr"
+    - "rr"
+    - "temp"
+    - "spo2"
+    - "wbc"
+    - "hb"
+    - "creatinine"
+    - "bnp"
+    - "x-ray"
+    - "ct scan"
+    - "echocardiogram"
+    - "alert and oriented"
+    - "in no acute distress"
+
+  assessment:
+    - "likely"
+    - "consistent with"
+    - "suggestive of"
+    - "diagnosis of"
+    - "impression"
+    - "acute"
+    - "chronic"
+    - "rule out"
+
+  plan:
+    - "will"
+    - "start"
+    - "continue"
+    - "discontinue"
+    - "admit"
+    - "discharge"
+    - "follow-up"
+    - "monitor"
+    - "consult"
+    - "prescribe"
+
+# Text cleaning patterns
+cleaning:
+  # 要移除的裝飾性符號
+  decorative_lines:
+    - "^[=]+$"
+    - "^[-]+$"
+    - "^[*]+$"
+    - "^[_]+$"
+
+  # 頁眉頁腳模式
+  headers_footers:
+    - "page \\d+ of \\d+"
+    - "printed on"
+    - "confidential"
+    - "\\[\\*\\*.*hospital.*\\*\\*\\]"
+
+  # 去識別化標記處理
+  deidentification:
+    # 決定如何處理 MIMIC 的去識別化標記
+    replace_with_placeholder: true  # true: 替換為 <TAG>, false: 完全移除
+
+    patterns:
+      name: "\\[\\*\\*.*name.*\\*\\*\\]"
+      hospital: "\\[\\*\\*.*hospital.*\\*\\*\\]"
+      location: "\\[\\*\\*.*location.*\\*\\*\\]"
+      date: "\\[\\*\\*.*date.*\\*\\*\\]"
+      age: "\\[\\*\\*.*age.*\\*\\*\\]"
+      number: "\\[\\*\\*.*number.*\\*\\*\\]"
+      identifier: "\\[\\*\\*.*identifier.*\\*\\*\\]"
+
+    placeholders:
+      name: "<NAME>"
+      hospital: "<HOSPITAL>"
+      location: "<LOCATION>"
+      date: "<DATE>"
+      age: "<AGE>"
+      number: "<NUMBER>"
+      identifier: "<ID>"
+
+# Quality control thresholds
+quality_control:
+  # 字數限制
+  min_words: 50  # 少於此字數的 note 可能不完整
+  max_words: 10000  # 超過此字數可能有異常
+
+  # SOAP 完整性
+  min_sections: 2  # 至少需要有幾個 SOAP 區段
+
+  # 壓縮後長度限制
+  max_compression_ratio: 0.95  # 如果清理後長度/原始長度 > 此值，可能清理不足
+
+# Output format
+output:
+  # JSON 輸出格式
+  json_indent: null  # null for compact, 2 for readable
+  ensure_ascii: false  # 支援中文等非 ASCII 字符
+
+  # SOAP 字串模板
+  template: "{section}: {content}"  # 例如 "S: patient reports..."
+  section_separator: " "  # 各區段之間的分隔符
+
+  # 空區段處理
+  include_empty_sections: false  # 是否包含空的 SOAP 區段
