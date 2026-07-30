@@ -300,7 +300,7 @@ MARS_PMB/
 │
 ├── preprocessing/
 │   ├── src/
-│   │   ├── extract_discharge_100.py    # 主要預處理腳本
+│   │   ├── extract_discharge.py    # 主要預處理腳本
 │   │   ├── soap_parser.py              # SOAP 區段解析（hybrid 模式）
 │   │   └── extract_from_local.py
 │   └── config/data_config.yaml
